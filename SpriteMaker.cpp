@@ -2,6 +2,14 @@
 
 SpriteMaker::SpriteMaker()
 {
+	/*
+		Basic Init :
+			the folder,
+			the name,
+			the extesion,
+			the color for the mask
+			color ratio
+	*/
 	m_folder = "PLACEIMAGEHERE/";
 	m_colorForMask = NULL;
 	m_colorRatio = 10;
@@ -19,16 +27,24 @@ SpriteMaker::SpriteMaker(string p_imageName, string p_extension, int p_colorRati
 	m_height = m_input.getSize().y;
 }
 
+//Destroy the color for the mask and every colors added for the transparency
 SpriteMaker::~SpriteMaker()
 {
 	delete m_colorForMask;
+
 	for (int i = 0; i < m_colors.size(); ++i)
 	{
 		delete m_colors[i];
 	}
 }
 
-void SpriteMaker::configure()
+/*
+	Name : mainExecution
+	Return : void
+	Attributes : 
+	Behavior : Display a main menu and effectue an operation corresponding to the user demand
+*/
+void SpriteMaker::mainExecution()
 {
 	char choice = '0';
 	int r, g, b;
@@ -78,7 +94,7 @@ void SpriteMaker::configure()
 			break;
 
 		case '7':
-			treatInput();
+			operate();
 			break;
 
 		default:
@@ -87,60 +103,93 @@ void SpriteMaker::configure()
 	}
 }
 
-void SpriteMaker::treatInput()
+/*
+	Name : operate
+	Return : void
+	Attributes :
+	Behavior : Load the image, create the black and white mask; create the sprite image; calculate the perfect hitbox
+*/
+void SpriteMaker::operate()
 {	
 	
+	//Load the image, stop the functin if the input image is not found
 	if (!m_input.loadFromFile(m_folder + m_imageName + "." + m_imageExtension))
 		return;
 
+	//Get the width & height
 	m_width = m_input.getSize().x;
 	m_height = m_input.getSize().y;
 
+	//Create the mask and the sprite
 	m_collisionMask.create(m_width, m_height, Color::White);
 	m_sprite.create(m_width, m_height, Color::White);
 	Color * tmp = NULL;
 
+	//For each pixel
 	for (int i = 0; i < m_height; ++i)
 	{
 		for (int j = 0; j < m_width; ++j)
 		{
-			if (QuitTheSameColor(m_input.getPixel(j, i), *m_colorForMask))
+			//If it's quit the same color as the m_colorForMask
+			if (quitTheSameColor(m_input.getPixel(j, i), *m_colorForMask))
 			{
+				//The mask pixel will be black
 				m_collisionMask.setPixel(j, i, Color::Black);
 			}
 
+			//For each color stocked in the array
 			for (int k = 0; k < m_colors.size(); ++k)
 			{
-				if (QuitTheSameColor(m_input.getPixel(j, i), *(m_colors[k])))
+				//If it's quit the same color as the colors actually selected
+				if (quitTheSameColor(m_input.getPixel(j, i), *(m_colors[k])))
 				{
+					//The pixel for the sprite image will become transparent
 					tmp = new Color(m_colors[k]->r, m_colors[k]->g, m_colors[k]->b, 0);
 					m_sprite.setPixel(j, i, *tmp);
 				}
 				else
 				{
+					//Else it will be a simple duplication
 					m_sprite.setPixel(j, i, m_input.getPixel(j, i));
 				}
 			}
 		}
 	}
 
+	//Function : perfectHitBox
 	calculatePerfectHitBox();
+	
+	//Save the mask and the sprite
 	m_collisionMask.saveToFile(m_folder + m_imageName + "_Mask." + m_imageExtension);
 	m_sprite.saveToFile(m_folder + m_imageName + "_Sprite.png");
 
+	//Clear the memory
 	delete tmp;
 }
 
-bool SpriteMaker::QuitTheSameColor(Color p_a, Color p_b)
+/*
+	Name : quitTheSameColor
+	Return : bool
+		True if the colors are the same, false in every other case
+	Attributes :
+		p_a (Color) ==> One of the two colors that will be compared
+		p_b (Color) ==> One of the two colors that will be compared
+	Behavior : Get the red, green and blue components and compare them. If the three components are equal (an error of m_colorRatio is
+				tolerated, the function will return true.
+*/
+bool SpriteMaker::quitTheSameColor(Color p_a, Color p_b)
 {
 	int quitTheSame = 0;
 
+	//Red
 	if (p_a.r - m_colorRatio <= p_b.r && p_b.r <= p_a.r + m_colorRatio)
 		quitTheSame++;
 
+	//Green
 	if (p_a.g - m_colorRatio <= p_b.g && p_b.g <= p_a.g + m_colorRatio)
 		quitTheSame++;
 
+	//Blue
 	if (p_a.b - m_colorRatio <= p_b.b && p_b.b <= p_a.b + m_colorRatio)
 		quitTheSame++;
 
@@ -150,6 +199,12 @@ bool SpriteMaker::QuitTheSameColor(Color p_a, Color p_b)
 		return false;
 }
 
+/*
+	Name : changeColorForMask
+	Return : void
+	Attributes :
+	Behavior : Ask the red, green and blue values for a new color that will be detected as the mask
+*/
 void SpriteMaker::changeColorForMask()
 {
 
@@ -165,6 +220,12 @@ void SpriteMaker::changeColorForMask()
 	m_colorForMask = new Color(r, g, b);
 }
 
+/*
+	Name : addColorForTransparency
+	Return : void
+	Attributes :
+	Behavior : Ask red, green and blue values then add the corresponding color in the array for the transparency
+*/
 void SpriteMaker::addColorForTransparency()
 {
 	int r, g, b;
@@ -182,13 +243,21 @@ void SpriteMaker::addColorForTransparency()
 	tmp = NULL;
 }
 
+/*
+	Name : removeColorForTransparency
+	Return : void
+	Attributes :
+	Behavior : Display all colors actually present in the array then delete them one by one if needed
+*/
 void SpriteMaker::removeColorForTransparency()
 {
 	char choice = 'a';
 	int index = -1;
 
+	//While choice != 'z' and the array is not empty
 	while (choice != 'z' && !m_colors.empty())
 	{
+		//Display all options (quit and all colors)
 		cout << "Current color : " << endl;
 		cout << "    z. Quit" << endl;
 
@@ -197,8 +266,11 @@ void SpriteMaker::removeColorForTransparency()
 			cout << "    " << i << " -> R:" << (int)m_colors[i]->r << " G:" << (int)m_colors[i]->g << " B:" << (int)m_colors[i]->b << endl;
 		}
 		cout << endl << "Color to erase (enter 1 or 2, ...) : ";
+
+		//Get the user input
 		cin >> choice;
 
+		//If the input is a char, get the corresponding index
 		if (48 <= choice && choice <= 57)
 		{
 			index = atoi(&choice);
@@ -208,8 +280,10 @@ void SpriteMaker::removeColorForTransparency()
 			index = m_colors.size();
 		}
 
+		//If the index is valid and the quit option not selected
 		if (index < m_colors.size() && choice != 'z')
 		{
+			//Erase the color
 			m_colors.erase(m_colors.begin() + index);
 		}
 
@@ -217,6 +291,12 @@ void SpriteMaker::removeColorForTransparency()
 	}
 }
 
+/*
+	Name : changeColorRatio
+	Return : void
+	Attributes :
+	Behavior : Set the delta when comparing two images
+*/
 void SpriteMaker::changeColorRatio()
 {
 	cout << "Enter the possible delta between the input image colors and your colors for the transparency." << endl;
@@ -224,6 +304,12 @@ void SpriteMaker::changeColorRatio()
 	cin >> m_colorRatio;
 }
 
+/*
+	Name : calculatePerfectHitBox
+	Return : void
+	Attributes :
+	Behavior : Calculate the perfect hit box from a sprite : get the first pixel encoutered in each axis and from the bottom and top
+*/
 void SpriteMaker::calculatePerfectHitBox()
 {	
 	int lowerY = m_height;
@@ -263,6 +349,12 @@ void SpriteMaker::calculatePerfectHitBox()
 	cout << "-------------------------" << endl;
 }
 
+/*
+	Name : changeImageName
+	Return : void
+	Attributes :
+	Behavior : Ask to the user to enter the name of the image
+*/
 void SpriteMaker::changeImageName()
 {
 	cout << "Enter the name of your image (without the extension) : ";
@@ -270,6 +362,12 @@ void SpriteMaker::changeImageName()
 	getline(cin, m_imageName);
 }
 
+/*
+	Name : changeImageExtension
+	Return : void
+	Attributes :
+	Behavior : Ask to the user to enter the extension of the image
+*/
 void SpriteMaker::changeImageExtension()
 {
 	cout << "Enter the enxtesion of your image (without the '.') : ";

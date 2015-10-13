@@ -1,21 +1,18 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
-#include <string>
-#include <iostream>
-#include <string>
 
-//My lib
+//SpriteMaker lib
 #include "SpriteMaker.h"
 
 using namespace std;
 using namespace sf;
 
 int main()
-{
+{	
 	SpriteMaker * spriteMaker = NULL;
 
+	//Create A SpriteMaker
 	spriteMaker = new SpriteMaker();
-	spriteMaker->configure();
+	spriteMaker->MainExecution();
 
 	return EXIT_SUCCESS;
 }

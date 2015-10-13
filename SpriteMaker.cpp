@@ -35,6 +35,8 @@ void SpriteMaker::configure()
 
 	while (choice != '8')
 	{
+		cout << "==| Current Image : " << m_folder << m_imageName << "." << m_imageExtension << " |==" << endl << endl;
+
 		cout << endl << "What do you want to do ?" << endl 
 			<< "    1. Change image name" << endl
 			<< "    2. Change image extension" << endl
